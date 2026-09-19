@@ -5,6 +5,7 @@ import (
 	"awesomeProject/internal/domain"
 	"awesomeProject/internal/fileutil"
 	"awesomeProject/internal/openrouter"
+	"awesomeProject/internal/prompt"
 	"context"
 	"flag"
 	"fmt"
@@ -51,6 +52,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	tailoringInput, err := prompt.BuildTailoringInput(request)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "prompt:", err)
+		os.Exit(1)
+	}
+
 	cfg, err := config.Load()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "config error:", err)
@@ -62,15 +69,16 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	responseData, err := aiClient.Complete(
+	responseText, err := aiClient.Complete(
 		ctx,
-		"Reply with exactly: connection works",
+		prompt.SystemInstructions,
+		tailoringInput,
 	)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Open router request failed:", err)
+		fmt.Fprintln(os.Stderr, "OpenRouter request failed:", err)
 		os.Exit(1)
 	}
 
-	fmt.Println(string(responseData))
+	fmt.Println(responseText)
 
 }
